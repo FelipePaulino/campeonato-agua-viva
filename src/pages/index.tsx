@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { useJogadores } from "../context/jogadoresContext";
 
 export default function Home() {
@@ -30,9 +31,9 @@ export default function Home() {
     <div style={styles.container}>
       <h1 style={styles.title}>🏆 Campeonato Água Viva</h1>
 
-      <a href="/cadastrar" style={styles.button}>
+      <Link href="/cadastrar" style={styles.button}>
         ➕ Cadastrar nova rodada
-      </a>
+      </Link>
 
       <div style={styles.tableWrapper}>
         <table style={styles.table}>

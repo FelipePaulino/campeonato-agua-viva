@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { useRouter } from "next/router";
 import { useJogadores } from "../context/jogadoresContext"; // ajuste o caminho
-import { jogadoresPorTime, Times } from "./constantes/times";
+import { jogadoresPorTime, Times } from "../constantes/times";
+import Link from "next/link";
 
 const STORAGE_KEY = "autorizadoParaCadastro";
 
@@ -10,7 +11,7 @@ export default function Cadastrar() {
   const [time, setTime] = useState<Times | "">("");
   const [nome, setNome] = useState("");
   const [rodada, setRodada] = useState<number>(1);
-  const [nota, setNota] = useState<number>(0);
+  const [nota] = useState<number>(0);
   const [notaStr, setNotaStr] = useState("0");
 
   const router = useRouter();
@@ -125,9 +126,9 @@ export default function Cadastrar() {
       </div>
 
       <br />
-      <a href="/" style={styles.link}>
+      <Link href="/" style={styles.link}>
         ← Voltar para tabela
-      </a>
+      </Link>
     </div>
   );
 }
