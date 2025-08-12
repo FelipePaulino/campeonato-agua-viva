@@ -5,8 +5,8 @@
   "devFiles": [],
   "ampDevFiles": [],
   "lowPriorityFiles": [
-    "static/6hcUDag6PCnHbrzoBD072/_buildManifest.js",
-    "static/6hcUDag6PCnHbrzoBD072/_ssgManifest.js"
+    "static/NbODGqlcXntTS9qNmHcxl/_buildManifest.js",
+    "static/NbODGqlcXntTS9qNmHcxl/_ssgManifest.js"
   ],
   "rootMainFiles": [],
   "rootMainFilesTree": {},
@@ -16,7 +16,7 @@
       "static/chunks/framework-7c95b8e5103c9e90.js",
       "static/chunks/main-48988c7ee807f547.js",
       "static/chunks/230-5443ad96548554c5.js",
-      "static/chunks/pages/index-661fc2bdc7095c46.js"
+      "static/chunks/pages/index-8d14812ee8d6d61e.js"
     ],
     "/_app": [
       "static/chunks/webpack-e9f60f32d783afa0.js",
@@ -36,7 +36,7 @@
       "static/chunks/framework-7c95b8e5103c9e90.js",
       "static/chunks/main-48988c7ee807f547.js",
       "static/chunks/230-5443ad96548554c5.js",
-      "static/chunks/pages/cadastrar-995f94719a75a56b.js"
+      "static/chunks/pages/cadastrar-10034c3e57043655.js"
     ]
   },
   "ampFirstPages": []

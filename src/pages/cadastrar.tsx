@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { useRouter } from "next/router";
-import { useJogadores } from "../context/jogadoresContext"; // ajuste o caminho
+import { useJogadores } from "../context/jogadoresContext";
 import { jogadoresPorTime, Times } from "../constantes/times";
 import Link from "next/link";
 
@@ -12,6 +12,7 @@ export default function Cadastrar() {
   const [nome, setNome] = useState("");
   const [nota, setNota] = useState<string>("0");
   const [rodada, setRodada] = useState<number>(1);
+  const [goleiro, setGoleiro] = useState(false);
 
   const router = useRouter();
   const { reloadJogadores } = useJogadores();
@@ -42,6 +43,7 @@ export default function Cadastrar() {
       time,
       rodada,
       nota: isNaN(notaNumber) ? 0 : notaNumber,
+      goleiro,
     };
 
     try {
@@ -72,7 +74,7 @@ export default function Cadastrar() {
             value={time}
             onChange={(e) => {
               setTime(e.target.value as Times);
-              setNome(""); // reset nome ao mudar time
+              setNome("");
             }}
             style={styles.select}
           >
@@ -125,6 +127,22 @@ export default function Cadastrar() {
             style={styles.input}
           />
         </label>
+        <label
+          style={{
+            ...styles.label,
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 8,
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={goleiro}
+            onChange={(e) => setGoleiro(e.target.checked)}
+            style={styles.checkbox}
+          />
+          Goleiro
+        </label>
 
         <button onClick={cadastrarJogador} style={styles.button}>
           Cadastrar
@@ -163,7 +181,7 @@ const styles = {
     flexDirection: "column" as const,
     fontWeight: "600",
     fontSize: 14,
-    color: "#555",
+    color: "#ddd",
   },
   select: {
     marginTop: 6,
@@ -182,6 +200,11 @@ const styles = {
     border: "1px solid #ccc",
     outline: "none",
     transition: "border-color 0.3s",
+  },
+  checkbox: {
+    width: 18,
+    height: 18,
+    cursor: "pointer",
   },
   button: {
     marginTop: 10,

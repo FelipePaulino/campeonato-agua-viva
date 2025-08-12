@@ -1,6 +1,10 @@
-// context/jogadoresContext.tsx
-
-import React, { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  ReactNode,
+} from "react";
 import axios from "axios";
 
 export interface JogadorRodada {
@@ -8,18 +12,19 @@ export interface JogadorRodada {
   nota: number;
   rodada: number;
   time: string;
+  goleiro?: boolean;
 }
 
 interface JogadoresContextData {
   jogadores: JogadorRodada[];
   rodadas: number[];
-  reloadJogadores: () => Promise<void>;  // <-- nova função para recarregar dados
+  reloadJogadores: () => Promise<void>;
 }
 
 const JogadoresContext = createContext<JogadoresContextData>({
   jogadores: [],
   rodadas: [],
-  reloadJogadores: async () => {},  // função vazia default
+  reloadJogadores: async () => {},
 });
 
 export const JogadoresProvider = ({ children }: { children: ReactNode }) => {
@@ -49,7 +54,9 @@ export const JogadoresProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   return (
-    <JogadoresContext.Provider value={{ jogadores, rodadas, reloadJogadores: fetchJogadores }}>
+    <JogadoresContext.Provider
+      value={{ jogadores, rodadas, reloadJogadores: fetchJogadores }}
+    >
       {children}
     </JogadoresContext.Provider>
   );
