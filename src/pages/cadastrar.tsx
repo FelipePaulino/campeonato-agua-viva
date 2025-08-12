@@ -10,9 +10,8 @@ const STORAGE_KEY = "autorizadoParaCadastro";
 export default function Cadastrar() {
   const [time, setTime] = useState<Times | "">("");
   const [nome, setNome] = useState("");
+  const [nota, setNota] = useState<string>("0");
   const [rodada, setRodada] = useState<number>(1);
-  const [nota] = useState<number>(0);
-  const [notaStr, setNotaStr] = useState("0");
 
   const router = useRouter();
   const { reloadJogadores } = useJogadores();
@@ -36,7 +35,14 @@ export default function Cadastrar() {
       return;
     }
 
-    const novoCadastro = { nome, time, rodada, nota };
+    const notaNumber = parseFloat(nota.replace(",", "."));
+
+    const novoCadastro = {
+      nome,
+      time,
+      rodada,
+      nota: isNaN(notaNumber) ? 0 : notaNumber,
+    };
 
     try {
       await axios.post(
@@ -111,11 +117,11 @@ export default function Cadastrar() {
           Nota:
           <input
             type="number"
-            value={notaStr}
+            value={nota}
             min={-50}
             max={50}
             step={0.1}
-            onChange={(e) => setNotaStr(e.target.value)}
+            onChange={(e) => setNota(e.target.value)}
             style={styles.input}
           />
         </label>
