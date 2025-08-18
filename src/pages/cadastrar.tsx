@@ -2,168 +2,277 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { useRouter } from "next/router";
 import { useJogadores } from "../context/jogadoresContext";
-import { jogadoresPorTime, Times } from "../constantes/times";
+import { jogadoresPorTime, Times } from "../constants/times";
 import Link from "next/link";
+import { JogadoresPorNome } from "@/types/jogadores-types";
+import { useSnackbar } from "@/context/SnackbarContext";
+import { useCartola } from "@/context/cartolaContext";
 
 const STORAGE_KEY = "autorizadoParaCadastro";
 
 export default function Cadastrar() {
   const [time, setTime] = useState<Times | "">("");
-  const [nome, setNome] = useState("");
-  const [nota, setNota] = useState<string>("0");
   const [rodada, setRodada] = useState<number>(1);
-  const [goleiro, setGoleiro] = useState(false);
+  const [jogadores, setJogadores] = useState<JogadoresPorNome>({});
+  const [senha, setSenha] = useState("");
+  const [senhaValida, setSenhaValida] = useState(false);
+  const [diaCartola, setDiaCartola] = useState<number>(1);
 
+  const { showSnackbar } = useSnackbar();
   const router = useRouter();
   const { reloadJogadores } = useJogadores();
+  const { atualizarCartola, cartola } = useCartola();
 
   useEffect(() => {
     const autorizado = localStorage.getItem(STORAGE_KEY);
-    if (autorizado !== "true") {
-      const senha = prompt("Digite a senha para acessar esta página:");
-      if (senha !== "1234") {
-        alert("Senha incorreta! Voltando para a página inicial.");
-        router.push("/");
-      } else {
-        localStorage.setItem(STORAGE_KEY, "true");
-      }
+    if (autorizado === "true") {
+      setSenhaValida(true);
     }
-  }, [router]);
+  }, []);
 
-  async function cadastrarJogador() {
-    if (!nome || !time) {
-      alert("Preencha o nome e o time!");
-      return;
-    }
-
-    const notaNumber = parseFloat(nota.replace(",", "."));
-
-    const novoCadastro = {
-      nome,
-      time,
-      rodada,
-      nota: isNaN(notaNumber) ? 0 : notaNumber,
-      goleiro,
-    };
-
-    try {
-      await axios.post(
-        "https://sistema-fut-ibav-default-rtdb.firebaseio.com/jogadores.json",
-        novoCadastro
+  function validarSenha() {
+    if (senha === "1234") {
+      localStorage.setItem(STORAGE_KEY, "true");
+      setSenhaValida(true);
+      showSnackbar(
+        "Você tem autorização para cadastrar jogadores, não faça merda porque não temos backup",
+        "success"
       );
-      alert("Cadastro realizado com sucesso!");
-
-      await reloadJogadores();
+    } else {
+      showSnackbar(
+        "Você não tem autorização para cadastrar jogadores",
+        "error"
+      );
       router.push("/");
-    } catch (error) {
-      console.error("Erro ao cadastrar jogador:", error);
-      alert("Erro ao cadastrar, tente novamente.");
     }
   }
 
-  const nomes = time ? jogadoresPorTime[time] : [];
+  useEffect(() => {
+    if (time) {
+      const nomes = jogadoresPorTime[time] || [];
+      const inicial = nomes.reduce((acc, nome) => {
+        acc[nome] = { nota: "0", goleiro: false, gols: 0 };
+        return acc;
+      }, {} as JogadoresPorNome);
+      setJogadores(inicial);
+    }
+  }, [time]);
+
+  async function cadastrarTodos() {
+    if (!time) {
+      showSnackbar("Selecione um time!", "error");
+      return;
+    }
+
+    const promessas = Object.entries(jogadores).map(
+      ([nome, { nota, goleiro, gols }]) => {
+        const notaNumber = parseFloat(nota.replace(",", "."));
+        return axios.post(
+          "https://sistema-fut-ibav-default-rtdb.firebaseio.com/jogadores.json",
+          {
+            nome,
+            time,
+            rodada,
+            nota: isNaN(notaNumber) ? 0 : notaNumber,
+            goleiro,
+            gols,
+          }
+        );
+      }
+    );
+
+    try {
+      await Promise.all(promessas);
+      showSnackbar("Cadastro realizado com sucesso!", "success");
+      await reloadJogadores();
+      router.push("/");
+    } catch (error) {
+      console.error("Erro ao cadastrar jogadores:", error);
+      showSnackbar("Erro ao cadastrar, tente novamente.", "error");
+    }
+  }
+
+  async function abrirCartola() {
+    try {
+      await atualizarCartola(diaCartola, true); // atualiza o registro existente ou cria se não houver
+      showSnackbar(`Cartola aberta para o dia ${diaCartola}`, "success");
+      router.push("/");
+    } catch (err) {
+      console.error(err);
+      showSnackbar("Erro ao abrir Cartola", "error");
+    }
+  }
+
+  async function fecharCartola() {
+    try {
+      await atualizarCartola(cartola!.DiaCartolaAtual , false); // fecha o cartola, mantendo o mesmo registro
+      showSnackbar("Cartola fechada", "success");
+      router.push("/");
+    } catch (err) {
+      console.error(err);
+      showSnackbar("Erro ao fechar Cartola", "error");
+    }
+  }
 
   return (
     <div style={styles.container}>
-      <h1 style={styles.title}>➕ Cadastrar nova rodada de jogador</h1>
-
-      <div style={styles.form}>
-        <label style={styles.label}>
-          Time:
-          <select
-            value={time}
-            onChange={(e) => {
-              setTime(e.target.value as Times);
-              setNome("");
+      {!senhaValida ? (
+        <div style={styles.modal}>
+          <h2>Digite a senha para acessar</h2>
+          <input
+            type="password"
+            value={senha}
+            onChange={(e) => setSenha(e.target.value)}
+            style={styles.input}
+          />
+          <button onClick={validarSenha} style={styles.button}>
+            Acessar
+          </button>
+        </div>
+      ) : (
+        <>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              marginBottom: 20,
             }}
-            style={styles.select}
           >
-            <option value="">-- Selecione o time --</option>
-            {Object.values(Times).map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label style={styles.label}>
-          Nome do jogador:
-          <select
-            value={nome}
-            onChange={(e) => setNome(e.target.value)}
-            disabled={!time}
-            style={styles.select}
-          >
-            <option value="">-- Selecione o jogador --</option>
-            {nomes.map((n) => (
-              <option key={n} value={n}>
-                {n}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label style={styles.label}>
-          Rodada:
-          <input
-            type="number"
-            value={rodada}
-            min={1}
-            onChange={(e) => setRodada(Number(e.target.value))}
-            style={styles.input}
-          />
-        </label>
-
-        <label style={styles.label}>
-          Nota:
-          <input
-            type="number"
-            value={nota}
-            min={-50}
-            max={50}
-            step={0.1}
-            onChange={(e) => setNota(e.target.value)}
-            style={styles.input}
-          />
-        </label>
-        <label
-          style={{
-            ...styles.label,
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 8,
-          }}
-        >
-          <input
-            type="checkbox"
-            checked={goleiro}
-            onChange={(e) => setGoleiro(e.target.checked)}
-            style={styles.checkbox}
-          />
-          Goleiro
-        </label>
-
-        <button onClick={cadastrarJogador} style={styles.button}>
-          Cadastrar
-        </button>
-      </div>
-
-      <br />
-      <Link href="/" style={styles.link}>
-        ← Voltar para tabela
-      </Link>
+            <label style={{ fontWeight: 600 }}>
+              Dia Cartola:
+              <select
+                value={diaCartola}
+                onChange={(e) => setDiaCartola(Number(e.target.value))}
+                style={{ marginLeft: 8, padding: "6px 12px", borderRadius: 6 }}
+              >
+                {[1, 2, 3, 4].map((d) => (
+                  <option key={d} value={d}>
+                    {d}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button onClick={abrirCartola} style={styles.button}>
+              Abrir Cartola
+            </button>
+            <button onClick={fecharCartola} style={styles.button}>
+              Fechar Cartola
+            </button>
+          </div>
+          <h1 style={styles.title}>➕ Cadastrar rodada por time</h1>
+          <div style={styles.form}>
+            <label style={styles.label}>
+              Time:
+              <select
+                value={time}
+                onChange={(e) => setTime(e.target.value as Times)}
+                style={styles.select}
+              >
+                <option value="">-- Selecione o time --</option>
+                {Object.values(Times).map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label style={styles.label}>
+              Rodada:
+              <input
+                type="number"
+                value={rodada}
+                min={1}
+                onChange={(e) => setRodada(Number(e.target.value))}
+                style={styles.input}
+              />
+            </label>
+            {time &&
+              Object.entries(jogadores).map(([nome, data]) => (
+                <div key={nome} style={styles.jogadorLinha}>
+                  <span style={styles.jogadorNome}>{nome}</span>
+                  <input
+                    type="number"
+                    value={data.nota}
+                    step={0.1}
+                    style={styles.input}
+                    onChange={(e) =>
+                      setJogadores((prev) => ({
+                        ...prev,
+                        [nome]: { ...prev[nome], nota: e.target.value },
+                      }))
+                    }
+                  />
+                  <label style={styles.labelInline}>
+                    Gols
+                    <input
+                      type="number"
+                      value={data.gols}
+                      min={0}
+                      step={1}
+                      style={styles.input}
+                      onChange={(e) =>
+                        setJogadores((prev) => ({
+                          ...prev,
+                          [nome]: {
+                            ...prev[nome],
+                            gols: Math.floor(Number(e.target.value)),
+                          },
+                        }))
+                      }
+                    />
+                  </label>
+                  <label style={styles.labelInline}>
+                    Goleiro
+                    <input
+                      type="checkbox"
+                      checked={data.goleiro}
+                      onChange={(e) =>
+                        setJogadores((prev) => ({
+                          ...prev,
+                          [nome]: { ...prev[nome], goleiro: e.target.checked },
+                        }))
+                      }
+                      style={styles.checkbox}
+                    />
+                  </label>
+                </div>
+              ))}
+            {time && (
+              <button onClick={cadastrarTodos} style={styles.button}>
+                Cadastrar todos
+              </button>
+            )}
+          </div>
+          <br />
+          <Link href="/" style={styles.link}>
+            ← Voltar para tabela
+          </Link>
+        </>
+      )}
     </div>
   );
 }
 
 const styles = {
   container: {
-    maxWidth: 400,
+    maxWidth: 600,
     margin: "40px auto",
     padding: "0 20px",
     fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
     color: "#333",
+  },
+  modal: {
+    display: "flex",
+    flexDirection: "column" as const,
+    alignItems: "center",
+    justifyContent: "center",
+    height: "60vh",
+    backgroundColor: "rgba(0,0,0,0.05)",
+    gap: 12,
+    padding: 20,
+    borderRadius: 8,
+    boxShadow: "0 2px 12px rgba(0,0,0,0.2)",
   },
   title: {
     textAlign: "center" as const,
@@ -174,14 +283,15 @@ const styles = {
   form: {
     display: "flex",
     flexDirection: "column" as const,
-    gap: 15,
+    gap: 10,
   },
   label: {
     display: "flex",
     flexDirection: "column" as const,
     fontWeight: "600",
     fontSize: 14,
-    color: "#ddd",
+    color: "#333",
+    marginTop: 6,
   },
   select: {
     marginTop: 6,
@@ -190,16 +300,15 @@ const styles = {
     borderRadius: 6,
     border: "1px solid #ccc",
     outline: "none",
-    transition: "border-color 0.3s",
   },
   input: {
+    width: 80,
     marginTop: 6,
     padding: "8px 12px",
     fontSize: 16,
     borderRadius: 6,
     border: "1px solid #ccc",
     outline: "none",
-    transition: "border-color 0.3s",
   },
   checkbox: {
     width: 18,
@@ -216,11 +325,24 @@ const styles = {
     fontSize: 16,
     fontWeight: "600",
     cursor: "pointer",
-    transition: "background-color 0.3s",
   },
   link: {
     color: "#0070f3",
     textDecoration: "none",
     fontWeight: "600",
+  },
+  jogadorLinha: {
+    display: "flex",
+    gap: 10,
+    alignItems: "center",
+    marginTop: 6,
+  },
+  jogadorNome: {
+    flex: 1,
+  },
+  labelInline: {
+    display: "flex",
+    alignItems: "center",
+    gap: 4,
   },
 };
