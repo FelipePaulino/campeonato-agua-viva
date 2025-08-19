@@ -59,7 +59,6 @@ export const jogadoresPorTime = {
     "Gabriel Santos Fonseca",
     "Paulo Victor da Silva",
     "Diego Evangelista Gonçalves",
-    "Victor Prudencio",
     "Victor Henrique",
     "Emanuel Medeiros",
     "Yan haikimi",

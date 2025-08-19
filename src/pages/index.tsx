@@ -1,6 +1,10 @@
 import Link from "next/link";
+import { useState } from "react";
 import { useJogadores } from "../context/jogadoresContext";
-import { TrophyIcon } from "@phosphor-icons/react";
+import {
+  TrophyIcon,
+  ArrowsDownUpIcon,
+} from "@phosphor-icons/react";
 import { useCartola } from "@/context/cartolaContext";
 import { useRouter } from "next/router";
 
@@ -8,6 +12,18 @@ export default function Home() {
   const { jogadores, rodadas } = useJogadores();
   const { cartola } = useCartola();
   const router = useRouter();
+
+  const [ordenarPor, setOrdenarPor] = useState<"gols" | "media">("media");
+  const [ordem, setOrdem] = useState<"asc" | "desc">("desc");
+
+  const toggleOrdenacao = (coluna: "gols" | "media") => {
+    if (ordenarPor === coluna) {
+      setOrdem(ordem === "asc" ? "desc" : "asc");
+    } else {
+      setOrdenarPor(coluna);
+      setOrdem("desc");
+    }
+  };
 
   const jogadoresMap = jogadores.reduce<
     Record<
@@ -34,13 +50,10 @@ export default function Home() {
     }
 
     acc[jogador.nome].notasPorRodada[jogador.rodada] = jogador.nota;
-
     acc[jogador.nome].golsPorRodada[jogador.rodada] = jogador.gols ?? 0;
-
     acc[jogador.nome].gols = Object.values(
       acc[jogador.nome].golsPorRodada
     ).reduce((total, val) => total + val, 0);
-
     acc[jogador.nome].goleiro =
       acc[jogador.nome].goleiro || Boolean(jogador.goleiro);
 
@@ -66,16 +79,20 @@ export default function Home() {
     return { ...jogador, media };
   });
 
-  const goleiros = jogadoresComMedia
-    .filter((j) => j.goleiro)
-    .sort((a, b) => b.media - a.media);
+  const jogadoresNormais = jogadoresComMedia.filter((j) => !j.goleiro);
+  const goleiros = jogadoresComMedia.filter((j) => j.goleiro);
 
-  const jogadoresNormais = jogadoresComMedia
-    .filter((j) => !j.goleiro)
-    .sort((a, b) => b.media - a.media);
+  const melhoresJogadoresNormais = [...jogadoresNormais]
+    .sort((a, b) => b.media - a.media)
+    .slice(0, 4);
 
-  const melhoresJogadoresNormais = jogadoresNormais.slice(0, 4);
-  const melhorGoleiro = goleiros[0];
+  const melhorGoleiro = goleiros.sort((a, b) => b.media - a.media)[0];
+
+  const jogadoresOrdenados = [...jogadoresNormais].sort((a, b) => {
+    const valorA = a[ordenarPor];
+    const valorB = b[ordenarPor];
+    return ordem === "asc" ? valorA - valorB : valorB - valorA;
+  });
 
   return (
     <div style={styles.container}>
@@ -106,12 +123,7 @@ export default function Home() {
       </div>
 
       <h2 style={styles.subtitle}>Jogadores</h2>
-      <div
-        style={{
-          overflowX: "auto",
-          WebkitOverflowScrolling: "touch", // ✅ tipado corretamente
-        }}
-      >
+      <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
         <table style={styles.table}>
           <thead style={styles.thead}>
             <tr>
@@ -122,12 +134,54 @@ export default function Home() {
                   Rodada {rodada}
                 </th>
               ))}
-              <th style={styles.th}>Gols</th>
-              <th style={styles.th}>Média</th>
+              <th style={styles.th} onClick={() => toggleOrdenacao("gols")}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    justifyContent: "center",
+                    cursor: "pointer",
+                  }}
+                >
+                  Gols{" "}
+                  {ordenarPor === "gols" ? (
+                    ordem === "asc" ? (
+                      <ArrowsDownUpIcon size={16} weight="bold" />
+                    ) : (
+                      <ArrowsDownUpIcon size={16} weight="bold" />
+                    )
+                  ) : (
+                    <ArrowsDownUpIcon size={16} weight="bold" />
+                  )}
+                </div>
+              </th>
+              <th style={styles.th} onClick={() => toggleOrdenacao("media")}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    justifyContent: "center",
+                    cursor: "pointer",
+                  }}
+                >
+                  Média{" "}
+                  {ordenarPor === "media" ? (
+                    ordem === "asc" ? (
+                      <ArrowsDownUpIcon size={16} weight="bold" />
+                    ) : (
+                      <ArrowsDownUpIcon size={16} weight="bold" />
+                    )
+                  ) : (
+                    <ArrowsDownUpIcon size={16} weight="bold" />
+                  )}
+                </div>
+              </th>
             </tr>
           </thead>
           <tbody>
-            {jogadoresNormais.map((jogador, i) => {
+            {jogadoresOrdenados.map((jogador, i) => {
               const isTop4 = melhoresJogadoresNormais.some(
                 (j) => j.nome === jogador.nome
               );
@@ -170,12 +224,7 @@ export default function Home() {
       </div>
 
       <h2 style={styles.subtitle}>Goleiros</h2>
-      <div
-        style={{
-          overflowX: "auto",
-          WebkitOverflowScrolling: "touch", // ✅ tipado corretamente
-        }}
-      >
+      <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
         <table style={styles.table}>
           <thead style={styles.thead}>
             <tr>
@@ -249,12 +298,7 @@ const styles = {
     fontSize: 28,
     color: "#0070f3",
   },
-  subtitle: {
-    marginTop: 30,
-    marginBottom: 10,
-    fontSize: 22,
-    color: "#0070f3",
-  },
+  subtitle: { marginTop: 30, marginBottom: 10, fontSize: 22, color: "#0070f3" },
   buttonsWrapper: {
     display: "flex",
     justifyContent: "space-between",
@@ -290,10 +334,7 @@ const styles = {
     borderCollapse: "collapse" as const,
     boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
   },
-  thead: {
-    backgroundColor: "#0070f3",
-    color: "white",
-  },
+  thead: { backgroundColor: "#0070f3", color: "white" },
   th: {
     padding: "12px 15px",
     textAlign: "center" as const,
@@ -312,16 +353,9 @@ const styles = {
     fontWeight: "bold",
     borderRight: "1px solid #ccc",
   },
-  rowEven: {
-    backgroundColor: "#f9f9f9",
-  },
-  rowOdd: {
-    backgroundColor: "#ffffff",
-  },
-  rowHighlight: {
-    backgroundColor: "#0052cc",
-    color: "#fff",
-  },
+  rowEven: { backgroundColor: "#f9f9f9" },
+  rowOdd: { backgroundColor: "#ffffff" },
+  rowHighlight: { backgroundColor: "#0052cc", color: "#fff" },
   tdHighlight: {
     padding: "10px 15px",
     textAlign: "center" as const,
