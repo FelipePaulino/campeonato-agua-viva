@@ -5,7 +5,7 @@ import axios from "axios";
 import { useJogadores } from "../context/jogadoresContext";
 import { useCartola } from "../context/cartolaContext";
 import Link from "next/link";
-import { Times, jogadoresPorTime } from "../constants/times";
+import { jogadoresPorTime } from "../constants/times";
 
 interface CampeonatoEntry {
   dia: number;
@@ -23,42 +23,42 @@ export default function CampeonatoListPage() {
     Record<string, Record<number, number>>
   >({});
 
-  // Rodadas por time por dia (sua regra)
   const rodadasPorTimePorDia: Record<number, Record<string, number[]>> = {
     1: {
       PSG: [1, 2],
       REAL_MADRID: [1],
       ARSENAL: [1],
-      CITY: [1],
+      MANCHESTER_CITY: [1],
       BARCELONA: [1],
     },
     2: {
       PSG: [3],
       REAL_MADRID: [2, 3],
       ARSENAL: [2],
-      CITY: [2],
+      MANCHESTER_CITY: [2],
       BARCELONA: [2],
     },
     3: {
       PSG: [4],
       REAL_MADRID: [4],
       ARSENAL: [3, 4],
-      CITY: [3, 4],
+      MANCHESTER_CITY: [3, 4],
       BARCELONA: [3, 4],
     },
   };
 
-  // Mapeia médias por jogador por rodada
+  const normalizaTimeKey = (t: string) => t.replace(/\s+/g, "_").toUpperCase();
+
   useEffect(() => {
     const map: Record<string, Record<number, number>> = {};
     jogadores.forEach((j) => {
-      if (!map[j.nome]) map[j.nome] = {};
-      map[j.nome][j.rodada] = j.nota;
+      const nome = j.nome;
+      if (!map[nome]) map[nome] = {};
+      map[nome][j.rodada] = j.nota;
     });
     setMediasPorJogadorPorRodada(map);
   }, [jogadores]);
 
-  // Busca seleções do Firebase
   useEffect(() => {
     const fetchSelecoes = async () => {
       try {
@@ -89,27 +89,29 @@ export default function CampeonatoListPage() {
 
   if (loading) return <p>Carregando...</p>;
 
-  const selecoesDoDia = selecoes.filter((s) => s.dia === cartola?.DiaCartolaAtual);
+  const selecoesDoDia = selecoes.filter(
+    (s) => s.dia === cartola?.DiaCartolaAtual
+  );
 
-  // Pega o time do jogador pelo enum/mapeamento
-  const getTimeDoJogador = (nome: string): Times | "DESCONHECIDO" => {
-    for (const [time, lista] of Object.entries(jogadoresPorTime)) {
-      if (lista.includes(nome)) return time as Times;
+  const getTimeKeyDoJogador = (nome: string): string => {
+    for (const [timeNome, listaJogadores] of Object.entries(jogadoresPorTime)) {
+      if (listaJogadores.includes(nome)) {
+        return normalizaTimeKey(timeNome); // ex: "Real Madrid" -> "REAL_MADRID"
+      }
     }
     return "DESCONHECIDO";
   };
 
-  // Pega a maior nota do jogador no dia considerando só as rodadas válidas
   const maiorNotaDoDia = (nome: string, dia: number) => {
-    const time = getTimeDoJogador(nome);
+    const time = getTimeKeyDoJogador(nome);
     const rodadas = rodadasPorTimePorDia[dia]?.[time] || [];
     const notas = rodadas
       .map((r) => mediasPorJogadorPorRodada[nome]?.[r])
       .filter((n) => n !== undefined && n !== null);
-    return notas.length ? Math.max(...notas) : null; // null se não houver nota
+    return notas.length ? Math.max(...notas) : null;
   };
 
-  const selecoesOrdenadas = selecoesDoDia.sort((a, b) => {
+  const selecoesOrdenadas = selecoesDoDia.slice().sort((a, b) => {
     const totalA = a.jogadores.reduce((sum, nome) => {
       const nota = maiorNotaDoDia(nome, a.dia);
       return sum + (nota ?? 0);
@@ -132,7 +134,7 @@ export default function CampeonatoListPage() {
       )}
 
       {selecoesOrdenadas.map((entry, idx) => {
-        const totalMedia = entry.jogadores.reduce((sum, nome) => {
+        const total = entry.jogadores.reduce((sum, nome) => {
           const nota = maiorNotaDoDia(nome, entry.dia);
           return sum + (nota ?? 0);
         }, 0);
@@ -143,17 +145,21 @@ export default function CampeonatoListPage() {
             <p style={styles.telefone}>Telefone: {entry.telefone}</p>
             <ul style={styles.jogadoresList}>
               {entry.jogadores.map((j, i) => {
-                const time = getTimeDoJogador(j);
+                const timeKey = getTimeKeyDoJogador(j);
+                const timeLabel =
+                  timeKey !== "DESCONHECIDO" ? timeKey.replace(/_/g, " ") : "";
                 const nota = maiorNotaDoDia(j, entry.dia);
                 return (
                   <li key={i}>
-                    {j} ({time}) {nota !== null ? `- Nota do dia: ${nota.toFixed(2)}` : ""}
+                    {j}
+                    {timeLabel ? ` (${timeLabel})` : ""}{" "}
+                    {nota !== null ? `- Nota do dia: ${nota.toFixed(2)}` : ""}
                   </li>
                 );
               })}
             </ul>
             <p>
-              <strong>Total da rodada:</strong> {totalMedia.toFixed(2)}
+              <strong>Total da rodada:</strong> {total.toFixed(2)}
             </p>
           </div>
         );

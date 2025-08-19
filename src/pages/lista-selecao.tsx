@@ -45,7 +45,7 @@ export default function CampeonatoPage() {
       showSnackbar("Digite seu nome!", "error");
       return;
     }
-    if (!telefone) {
+       if (!telefone) {
       showSnackbar("Digite seu telefone!", "error");
       return;
     }
