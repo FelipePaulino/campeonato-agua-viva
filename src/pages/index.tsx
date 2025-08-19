@@ -33,18 +33,14 @@ export default function Home() {
       };
     }
 
-    // Armazena a nota por rodada
     acc[jogador.nome].notasPorRodada[jogador.rodada] = jogador.nota;
 
-    // Armazena gols por rodada
     acc[jogador.nome].golsPorRodada[jogador.rodada] = jogador.gols ?? 0;
 
-    // Atualiza total de gols
     acc[jogador.nome].gols = Object.values(
       acc[jogador.nome].golsPorRodada
     ).reduce((total, val) => total + val, 0);
 
-    // Mantém se é goleiro
     acc[jogador.nome].goleiro =
       acc[jogador.nome].goleiro || Boolean(jogador.goleiro);
 
@@ -53,7 +49,6 @@ export default function Home() {
 
   const handleCampeonatoClick = () => {
     if (!cartola?.cartola) {
-      // se cartola = false, redireciona para /selecao
       router.push("/selecao");
     } else {
       router.push("/lista-selecao");
@@ -111,7 +106,12 @@ export default function Home() {
       </div>
 
       <h2 style={styles.subtitle}>Jogadores</h2>
-      <div style={styles.tableWrapper}>
+      <div
+        style={{
+          overflowX: "auto",
+          WebkitOverflowScrolling: "touch", // ✅ tipado corretamente
+        }}
+      >
         <table style={styles.table}>
           <thead style={styles.thead}>
             <tr>
@@ -170,7 +170,12 @@ export default function Home() {
       </div>
 
       <h2 style={styles.subtitle}>Goleiros</h2>
-      <div style={styles.tableWrapper}>
+      <div
+        style={{
+          overflowX: "auto",
+          WebkitOverflowScrolling: "touch", // ✅ tipado corretamente
+        }}
+      >
         <table style={styles.table}>
           <thead style={styles.thead}>
             <tr>
@@ -232,7 +237,7 @@ export default function Home() {
 
 const styles = {
   container: {
-    width: 1100,
+    maxWidth: "1100px",
     margin: "40px auto",
     padding: "0 20px",
     fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
@@ -279,10 +284,8 @@ const styles = {
     fontWeight: "600",
     transition: "background-color 0.3s ease",
   },
-  tableWrapper: {
-    overflowX: "auto" as const,
-  },
   table: {
+    minWidth: "600px",
     width: "100%",
     borderCollapse: "collapse" as const,
     boxShadow: "0 2px 8px rgba(0,0,0,0.1)",

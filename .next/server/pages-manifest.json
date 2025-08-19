@@ -1,8 +1,11 @@
 {
-  "/": "pages/index.js",
-  "/_app": "pages/_app.js",
   "/_document": "pages/_document.js",
-  "/cadastrar": "pages/cadastrar.js",
-  "/lista-selecao": "pages/lista-selecao.js",
-  "/selecao": "pages/selecao.js"
+  "/api/hello": "pages/api/hello.js",
+  "/lista-selecao": "pages/lista-selecao.html",
+  "/_app": "pages/_app.js",
+  "/cadastrar": "pages/cadastrar.html",
+  "/selecao": "pages/selecao.html",
+  "/": "pages/index.html",
+  "/_error": "pages/_error.js",
+  "/404": "pages/404.html"
 }
