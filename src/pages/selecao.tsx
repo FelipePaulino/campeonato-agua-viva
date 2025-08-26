@@ -45,6 +45,20 @@ export default function CampeonatoListPage() {
       MANCHESTER_CITY: [3, 4],
       BARCELONA: [3, 4],
     },
+    4: {
+      PSG: [5],
+      REAL_MADRID: [5],
+      ARSENAL: [5],
+      MANCHESTER_CITY: [5],
+      BARCELONA: [5],
+    },
+    5: {
+      PSG: [6],
+      REAL_MADRID: [6],
+      ARSENAL: [6],
+      MANCHESTER_CITY: [6],
+      BARCELONA: [6],
+    },
   };
 
   const normalizaTimeKey = (t: string) => t.replace(/\s+/g, "_").toUpperCase();
