@@ -20,12 +20,11 @@ const CartolaContext = createContext<CartolaContextData>({
 
 export const CartolaProvider = ({ children }: { children: ReactNode }) => {
   const [cartola, setCartola] = useState<CartolaData | null>(null);
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
 
   async function fetchCartola() {
     try {
       const response = await axios.get(
-        `${siteUrl}/cartola.json`
+        "https://sistema-fut-ibav-default-rtdb.firebaseio.com/cartola.json"
       );
       const data = response.data;
       const dataArray = Object.values(data || {}) as CartolaData[];
@@ -40,7 +39,7 @@ export const CartolaProvider = ({ children }: { children: ReactNode }) => {
     try {
       // Pega a chave do último registro
       const res = await axios.get(
-        `${siteUrl}/cartola.json`
+        "https://sistema-fut-ibav-default-rtdb.firebaseio.com/cartola.json"
       );
       const data = res.data;
       const keys = Object.keys(data || {});
@@ -49,13 +48,13 @@ export const CartolaProvider = ({ children }: { children: ReactNode }) => {
       if (ultimoId) {
         // Atualiza o registro existente
         await axios.patch(
-          `${siteUrl}/cartola/${ultimoId}.json`,
+          `https://sistema-fut-ibav-default-rtdb.firebaseio.com/cartola/${ultimoId}.json`,
           { DiaCartolaAtual: dia, cartola: estado }
         );
       } else {
         // Se não existir nenhum, cria um novo
         await axios.post(
-         `${siteUrl}/cartola.json`,
+          "https://sistema-fut-ibav-default-rtdb.firebaseio.com/cartola.json",
           { DiaCartolaAtual: dia, cartola: estado }
         );
       }
