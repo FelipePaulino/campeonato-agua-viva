@@ -36,12 +36,12 @@ export default function EditarCampeonatoPage() {
         if (!data) return;
 
         const cadastro = Object.entries(data).find(
-          ([key, val]: [string, any]) =>
-            val.usuarioUid === usuarioLogado.uid && val.dia === cartola?.DiaCartolaAtual
+          (val: any) =>
+            val?.usuarioUid === usuarioLogado?.uid && val?.dia === cartola?.DiaCartolaAtual
         );
 
         if (cadastro) {
-          const [key, val]: any = cadastro;
+          const [val]: any = cadastro;
           setNomeUsuario(val.usuario);
           setTelefone(val.telefone || "");
           setSelecoes(val.jogadores || ["", "", "", "", ""]);

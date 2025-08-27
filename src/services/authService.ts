@@ -1,5 +1,5 @@
 import { auth, db } from "./firebaseConfig";
-import { ref, set } from "firebase/database";
+import { ref, set, update } from "firebase/database";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -13,7 +13,7 @@ export async function registrarUsuario(email: string, senha: string, nome: strin
   const userCredential = await createUserWithEmailAndPassword(auth, email, senha);
   const user = userCredential.user;
 
-  await set(ref(db, "usuarios/" + user.uid), {
+  await set(ref(db, `usuarios/${user.uid}`), {
     nome,
     telefone,
     email,
@@ -39,13 +39,13 @@ export async function loginComGoogle() {
   const userCredential = await signInWithPopup(auth, provider);
   const user = userCredential.user;
 
-  // Salva dados no Realtime Database caso seja novo usuário
-  const userRef = ref(db, "usuarios/" + user.uid);
-  await set(userRef, {
-    nome: user.displayName,
-    email: user.email,
+  // 🔁 "Merge" no Realtime DB = use update()
+  const userRef = ref(db, `usuarios/${user.uid}`);
+  await update(userRef, {
+    nome: user.displayName ?? "",
+    email: user.email ?? "",
     telefone: "", // Pode atualizar depois
-  }, { merge: true }); // merge evita sobrescrever dados existentes
+  });
 
   return user;
 }

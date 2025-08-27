@@ -15,9 +15,6 @@ build/
 # Arquivos de sistema
 .DS_Store
 
-# Ambiente
-.env
-
 # Cache
 .cache/
 

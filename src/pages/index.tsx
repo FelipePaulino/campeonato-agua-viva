@@ -7,7 +7,6 @@ import {
 } from "@phosphor-icons/react";
 import { useCartola } from "@/context/cartolaContext";
 import { useRouter } from "next/router";
-import ProtectedRoute from "@/components/ProtectedRoute";
 import { useAuthHooks } from "@/hooks/useAuth";
 import axios from "axios";
 import { useAuth } from "@/context/AuthContext";
@@ -18,7 +17,6 @@ export default function Home() {
   const router = useRouter();
   const { user } = useAuthHooks();
   const { isAdmin } = useAuth();
-console.log(isAdmin, 'isAdmin');
 
   const [ordenarPor, setOrdenarPor] = useState<"gols" | "media">("media");
   const [ordem, setOrdem] = useState<"asc" | "desc">("desc");
@@ -81,9 +79,8 @@ console.log(isAdmin, 'isAdmin');
 
       // procurar se já existe cadastro para o dia atual
       const cadastroExistente = Object.entries(data).find(
-        ([key, val]: [string, any]) => {
-          console.log(val.usuario, user.displayName, val.dia, cartola?.DiaCartolaAtual, 'cartola?.DiaCartolaAtual')
-         return val.usuario === user.displayName && val.dia === cartola?.DiaCartolaAtual
+        (val: any) => {
+         return val.usuario === user?.displayName && val.dia === cartola?.DiaCartolaAtual
         }
       );
 

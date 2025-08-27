@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { registrarUsuario } from "@/services/authService";
 import router from "next/router";
+import Link from "next/link";
 
 export default function RegisterPage() {
   const [nome, setNome] = useState("");
@@ -45,7 +46,9 @@ export default function RegisterPage() {
 
         <div style={styles.footer}>
           Já tem conta?
-          <a href="/login" style={styles.link}>Login</a>
+          <Link href="/cadastrar" style={styles.link}>
+            Login
+          </Link>
         </div>
       </div>
     </div>
