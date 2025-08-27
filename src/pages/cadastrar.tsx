@@ -7,45 +7,21 @@ import Link from "next/link";
 import { JogadoresPorNome } from "@/types/jogadores-types";
 import { useSnackbar } from "@/context/SnackbarContext";
 import { useCartola } from "@/context/cartolaContext";
-
-const STORAGE_KEY = "autorizadoParaCadastro";
+import ProtectedRoute from "@/components/ProtectedRoute";
+import { useAuth } from "@/context/AuthContext";
 
 export default function Cadastrar() {
   const [time, setTime] = useState<Times | "">("");
   const [rodada, setRodada] = useState<number>(1);
   const [jogadores, setJogadores] = useState<JogadoresPorNome>({});
-  const [senha, setSenha] = useState("");
-  const [senhaValida, setSenhaValida] = useState(false);
   const [diaCartola, setDiaCartola] = useState<number>(1);
 
   const { showSnackbar } = useSnackbar();
   const router = useRouter();
   const { reloadJogadores } = useJogadores();
   const { atualizarCartola, cartola } = useCartola();
-
-  useEffect(() => {
-    const autorizado = localStorage.getItem(STORAGE_KEY);
-    if (autorizado === "true") {
-      setSenhaValida(true);
-    }
-  }, []);
-
-  function validarSenha() {
-    if (senha === "1234") {
-      localStorage.setItem(STORAGE_KEY, "true");
-      setSenhaValida(true);
-      showSnackbar(
-        "Você tem autorização para cadastrar jogadores, não faça merda porque não temos backup",
-        "success"
-      );
-    } else {
-      showSnackbar(
-        "Você não tem autorização para cadastrar jogadores",
-        "error"
-      );
-      router.push("/");
-    }
-  }
+  const { isAdmin } = useAuth();
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
 
   useEffect(() => {
     if (time) {
@@ -67,17 +43,14 @@ export default function Cadastrar() {
     const promessas = Object.entries(jogadores).map(
       ([nome, { nota, goleiro, gols }]) => {
         const notaNumber = parseFloat(nota.replace(",", "."));
-        return axios.post(
-          "https://sistema-fut-ibav-default-rtdb.firebaseio.com/jogadores.json",
-          {
-            nome,
-            time,
-            rodada,
-            nota: isNaN(notaNumber) ? 0 : notaNumber,
-            goleiro,
-            gols,
-          }
-        );
+        return axios.post(`${siteUrl}/jogadores.json`, {
+          nome,
+          time,
+          rodada,
+          nota: isNaN(notaNumber) ? 0 : notaNumber,
+          goleiro,
+          gols,
+        });
       }
     );
 
@@ -105,7 +78,7 @@ export default function Cadastrar() {
 
   async function fecharCartola() {
     try {
-      await atualizarCartola(cartola!.DiaCartolaAtual , false); // fecha o cartola, mantendo o mesmo registro
+      await atualizarCartola(cartola!.DiaCartolaAtual, false); // fecha o cartola, mantendo o mesmo registro
       showSnackbar("Cartola fechada", "success");
       router.push("/");
     } catch (err) {
@@ -114,22 +87,13 @@ export default function Cadastrar() {
     }
   }
 
+  useEffect(() => {
+    if (!isAdmin) router.push("/");
+  });
+
   return (
-    <div style={styles.container}>
-      {!senhaValida ? (
-        <div style={styles.modal}>
-          <h2>Digite a senha para acessar</h2>
-          <input
-            type="password"
-            value={senha}
-            onChange={(e) => setSenha(e.target.value)}
-            style={styles.input}
-          />
-          <button onClick={validarSenha} style={styles.button}>
-            Acessar
-          </button>
-        </div>
-      ) : (
+    <ProtectedRoute>
+      <div style={styles.container}>
         <>
           <div
             style={{
@@ -146,7 +110,7 @@ export default function Cadastrar() {
                 onChange={(e) => setDiaCartola(Number(e.target.value))}
                 style={{ marginLeft: 8, padding: "6px 12px", borderRadius: 6 }}
               >
-                {[1, 2, 3, 4].map((d) => (
+                {[1, 2, 3, 4, 5].map((d) => (
                   <option key={d} value={d}>
                     {d}
                   </option>
@@ -249,8 +213,8 @@ export default function Cadastrar() {
             ← Voltar para tabela
           </Link>
         </>
-      )}
-    </div>
+      </div>
+    </ProtectedRoute>
   );
 }
 
