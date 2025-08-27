@@ -75,16 +75,12 @@ export default function Home() {
         router.push("/selecao");
         return;
       }
-console.log(data, 'data');
 
       // procurar se já existe cadastro para o dia atual
       const cadastroExistente = Object.entries(data).find(([key, val]: [string, any]) => {
-        console.log(val.usuario, user?.displayName, val.dia, cartola?.DiaCartolaAtual, 'dsdd' );
-        
         return val.usuario === user?.displayName &&
           val.dia === cartola?.DiaCartolaAtual;
       });
-      console.log(cadastroExistente, "cadastroExistente");
 
       if (cadastroExistente) {
         const [key] = cadastroExistente;
