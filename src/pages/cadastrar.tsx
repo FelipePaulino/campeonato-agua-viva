@@ -7,6 +7,7 @@ import Link from "next/link";
 import { JogadoresPorNome } from "@/types/jogadores-types";
 import { useSnackbar } from "@/context/SnackbarContext";
 import { useCartola } from "@/context/cartolaContext";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 const STORAGE_KEY = "autorizadoParaCadastro";
 
@@ -22,7 +23,7 @@ export default function Cadastrar() {
   const router = useRouter();
   const { reloadJogadores } = useJogadores();
   const { atualizarCartola, cartola } = useCartola();
-
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
   useEffect(() => {
     const autorizado = localStorage.getItem(STORAGE_KEY);
     if (autorizado === "true") {
@@ -68,7 +69,7 @@ export default function Cadastrar() {
       ([nome, { nota, goleiro, gols }]) => {
         const notaNumber = parseFloat(nota.replace(",", "."));
         return axios.post(
-          "https://sistema-fut-ibav-default-rtdb.firebaseio.com/jogadores.json",
+          `${siteUrl}/jogadores.json`,
           {
             nome,
             time,
@@ -105,7 +106,7 @@ export default function Cadastrar() {
 
   async function fecharCartola() {
     try {
-      await atualizarCartola(cartola!.DiaCartolaAtual , false); // fecha o cartola, mantendo o mesmo registro
+      await atualizarCartola(cartola!.DiaCartolaAtual, false); // fecha o cartola, mantendo o mesmo registro
       showSnackbar("Cartola fechada", "success");
       router.push("/");
     } catch (err) {
@@ -115,142 +116,144 @@ export default function Cadastrar() {
   }
 
   return (
-    <div style={styles.container}>
-      {!senhaValida ? (
-        <div style={styles.modal}>
-          <h2>Digite a senha para acessar</h2>
-          <input
-            type="password"
-            value={senha}
-            onChange={(e) => setSenha(e.target.value)}
-            style={styles.input}
-          />
-          <button onClick={validarSenha} style={styles.button}>
-            Acessar
-          </button>
-        </div>
-      ) : (
-        <>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              marginBottom: 20,
-            }}
-          >
-            <label style={{ fontWeight: 600 }}>
-              Dia Cartola:
-              <select
-                value={diaCartola}
-                onChange={(e) => setDiaCartola(Number(e.target.value))}
-                style={{ marginLeft: 8, padding: "6px 12px", borderRadius: 6 }}
-              >
-                {[1, 2, 3, 4].map((d) => (
-                  <option key={d} value={d}>
-                    {d}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <button onClick={abrirCartola} style={styles.button}>
-              Abrir Cartola
-            </button>
-            <button onClick={fecharCartola} style={styles.button}>
-              Fechar Cartola
+    <ProtectedRoute>
+      <div style={styles.container}>
+        {!senhaValida ? (
+          <div style={styles.modal}>
+            <h2>Digite a senha para acessar</h2>
+            <input
+              type="password"
+              value={senha}
+              onChange={(e) => setSenha(e.target.value)}
+              style={styles.input}
+            />
+            <button onClick={validarSenha} style={styles.button}>
+              Acessar
             </button>
           </div>
-          <h1 style={styles.title}>➕ Cadastrar rodada por time</h1>
-          <div style={styles.form}>
-            <label style={styles.label}>
-              Time:
-              <select
-                value={time}
-                onChange={(e) => setTime(e.target.value as Times)}
-                style={styles.select}
-              >
-                <option value="">-- Selecione o time --</option>
-                {Object.values(Times).map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label style={styles.label}>
-              Rodada:
-              <input
-                type="number"
-                value={rodada}
-                min={1}
-                onChange={(e) => setRodada(Number(e.target.value))}
-                style={styles.input}
-              />
-            </label>
-            {time &&
-              Object.entries(jogadores).map(([nome, data]) => (
-                <div key={nome} style={styles.jogadorLinha}>
-                  <span style={styles.jogadorNome}>{nome}</span>
-                  <input
-                    type="number"
-                    value={data.nota}
-                    step={0.1}
-                    style={styles.input}
-                    onChange={(e) =>
-                      setJogadores((prev) => ({
-                        ...prev,
-                        [nome]: { ...prev[nome], nota: e.target.value },
-                      }))
-                    }
-                  />
-                  <label style={styles.labelInline}>
-                    Gols
+        ) : (
+          <>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                marginBottom: 20,
+              }}
+            >
+              <label style={{ fontWeight: 600 }}>
+                Dia Cartola:
+                <select
+                  value={diaCartola}
+                  onChange={(e) => setDiaCartola(Number(e.target.value))}
+                  style={{ marginLeft: 8, padding: "6px 12px", borderRadius: 6 }}
+                >
+                  {[1, 2, 3, 4].map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <button onClick={abrirCartola} style={styles.button}>
+                Abrir Cartola
+              </button>
+              <button onClick={fecharCartola} style={styles.button}>
+                Fechar Cartola
+              </button>
+            </div>
+            <h1 style={styles.title}>➕ Cadastrar rodada por time</h1>
+            <div style={styles.form}>
+              <label style={styles.label}>
+                Time:
+                <select
+                  value={time}
+                  onChange={(e) => setTime(e.target.value as Times)}
+                  style={styles.select}
+                >
+                  <option value="">-- Selecione o time --</option>
+                  {Object.values(Times).map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label style={styles.label}>
+                Rodada:
+                <input
+                  type="number"
+                  value={rodada}
+                  min={1}
+                  onChange={(e) => setRodada(Number(e.target.value))}
+                  style={styles.input}
+                />
+              </label>
+              {time &&
+                Object.entries(jogadores).map(([nome, data]) => (
+                  <div key={nome} style={styles.jogadorLinha}>
+                    <span style={styles.jogadorNome}>{nome}</span>
                     <input
                       type="number"
-                      value={data.gols}
-                      min={0}
-                      step={1}
+                      value={data.nota}
+                      step={0.1}
                       style={styles.input}
                       onChange={(e) =>
                         setJogadores((prev) => ({
                           ...prev,
-                          [nome]: {
-                            ...prev[nome],
-                            gols: Math.floor(Number(e.target.value)),
-                          },
+                          [nome]: { ...prev[nome], nota: e.target.value },
                         }))
                       }
                     />
-                  </label>
-                  <label style={styles.labelInline}>
-                    Goleiro
-                    <input
-                      type="checkbox"
-                      checked={data.goleiro}
-                      onChange={(e) =>
-                        setJogadores((prev) => ({
-                          ...prev,
-                          [nome]: { ...prev[nome], goleiro: e.target.checked },
-                        }))
-                      }
-                      style={styles.checkbox}
-                    />
-                  </label>
-                </div>
-              ))}
-            {time && (
-              <button onClick={cadastrarTodos} style={styles.button}>
-                Cadastrar todos
-              </button>
-            )}
-          </div>
-          <br />
-          <Link href="/" style={styles.link}>
-            ← Voltar para tabela
-          </Link>
-        </>
-      )}
-    </div>
+                    <label style={styles.labelInline}>
+                      Gols
+                      <input
+                        type="number"
+                        value={data.gols}
+                        min={0}
+                        step={1}
+                        style={styles.input}
+                        onChange={(e) =>
+                          setJogadores((prev) => ({
+                            ...prev,
+                            [nome]: {
+                              ...prev[nome],
+                              gols: Math.floor(Number(e.target.value)),
+                            },
+                          }))
+                        }
+                      />
+                    </label>
+                    <label style={styles.labelInline}>
+                      Goleiro
+                      <input
+                        type="checkbox"
+                        checked={data.goleiro}
+                        onChange={(e) =>
+                          setJogadores((prev) => ({
+                            ...prev,
+                            [nome]: { ...prev[nome], goleiro: e.target.checked },
+                          }))
+                        }
+                        style={styles.checkbox}
+                      />
+                    </label>
+                  </div>
+                ))}
+              {time && (
+                <button onClick={cadastrarTodos} style={styles.button}>
+                  Cadastrar todos
+                </button>
+              )}
+            </div>
+            <br />
+            <Link href="/" style={styles.link}>
+              ← Voltar para tabela
+            </Link>
+          </>
+        )}
+      </div>
+    </ProtectedRoute>
   );
 }
 
