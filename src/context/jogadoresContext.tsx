@@ -25,17 +25,17 @@ interface JogadoresContextData {
 const JogadoresContext = createContext<JogadoresContextData>({
   jogadores: [],
   rodadas: [],
-  reloadJogadores: async () => {},
+  reloadJogadores: async () => { },
 });
 
 export const JogadoresProvider = ({ children }: { children: ReactNode }) => {
   const [jogadores, setJogadores] = useState<JogadorRodada[]>([]);
   const [rodadas, setRodadas] = useState<number[]>([]);
-
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
   async function fetchJogadores() {
     try {
       const response = await axios.get(
-        "https://sistema-fut-ibav-default-rtdb.firebaseio.com/jogadores.json"
+        `${siteUrl}/jogadores.json`
       );
 
       const dataArray = Object.values(response.data || {}) as JogadorRodada[];

@@ -10,7 +10,7 @@ import { useRouter } from "next/router";
 import { getAuth } from "firebase/auth";
 import { useUsuario } from "@/context/userContext";
 
-export default function CampeonatoPage() {
+export default function EditarCampeonatoPage() {
   const [dia, setDia] = useState<number>(1);
   const [nomeUsuario, setNomeUsuario] = useState("");
   const [telefone, setTelefone] = useState("");
@@ -26,6 +26,7 @@ export default function CampeonatoPage() {
   const usuarioLogado = auth.currentUser;
   const { usuario } = useUsuario();
 
+  // Carregar cadastro existente
   useEffect(() => {
     const fetchCadastro = async () => {
       if (!usuarioLogado) return;
@@ -53,6 +54,7 @@ export default function CampeonatoPage() {
     fetchCadastro();
   }, [usuarioLogado, cartola?.DiaCartolaAtual]);
 
+  // Atualiza o dia atual
   useEffect(() => {
     if (cartola?.DiaCartolaAtual) {
       setDia(cartola.DiaCartolaAtual);
@@ -71,58 +73,55 @@ export default function CampeonatoPage() {
     setSelecoes(novasSelecoes);
   };
 
-const handleSubmit = async () => {
-  if (!usuarioLogado) return showSnackbar("Você precisa estar logado!", "error");
+  const handleSubmit = async () => {
+    if (!usuarioLogado) return showSnackbar("Você precisa estar logado!", "error");
+    if (!nomeUsuario) return showSnackbar("Digite seu nome!", "error");
+    if (!telefone) return showSnackbar("Digite seu telefone!", "error");
+    if (selecoes.some((s) => s === "")) return showSnackbar("Selecione 5 jogadores!", "error");
 
-  // Pega dados do contexto ou fallback para o estado local
-  const nomeFinal = usuario?.nome || nomeUsuario;
-  const telefoneFinal = usuario?.telefone || telefone;
+    try {
+      const res = await axios.get(`${siteUrl}/campeonato.json`);
+      const data = res.data;
+      let cadastroKey: string | null = null;
 
-  if (!nomeFinal) return showSnackbar("Digite seu nome!", "error");
-  if (!telefoneFinal) return showSnackbar("Digite seu telefone!", "error");
-  if (selecoes.some((s) => s === "")) return showSnackbar("Selecione 5 jogadores!", "error");
+      if (data) {
+        cadastroKey = Object.keys(data).find(
+          (key) =>
+            data[key].usuarioUid === usuarioLogado.uid &&
+            data[key].dia === cartola?.DiaCartolaAtual
+        ) || null;
+      }
 
-  try {
-    const res = await axios.get(`${siteUrl}/campeonato.json`);
-    const data = res.data;
-    let cadastroKey: string | null = null;
+      if (cadastroKey) {
+        // Atualiza cadastro existente
+        await axios.patch(`${siteUrl}/campeonato/${cadastroKey}.json`, {
+          usuario: nomeUsuario,
+          telefone,
+          jogadores: selecoes,
+        });
+        showSnackbar("Cadastro atualizado com sucesso!", "success");
+      } else {
+        // Cria novo cadastro (caso não exista)
+        await axios.post(`${siteUrl}/campeonato.json`, {
+          dia: cartola?.DiaCartolaAtual,
+          usuario: nomeUsuario,
+          usuarioUid: usuarioLogado.uid,
+          telefone,
+          jogadores: selecoes,
+        });
+        showSnackbar("Cadastro realizado com sucesso!", "success");
+      }
 
-    if (data) {
-      cadastroKey = Object.keys(data).find(
-        (key) =>
-          data[key].usuarioUid === usuarioLogado.uid &&
-          data[key].dia === cartola?.DiaCartolaAtual
-      ) || null;
+      router.push("/");
+    } catch (err) {
+      console.error(err);
+      showSnackbar("Erro ao enviar seleção.", "error");
     }
-
-    if (cadastroKey) {
-      await axios.patch(`${siteUrl}/campeonato/${cadastroKey}.json`, {
-        usuario: nomeFinal,
-        telefone: telefoneFinal,
-        jogadores: selecoes,
-      });
-      showSnackbar("Cadastro atualizado com sucesso!", "success");
-    } else {
-      await axios.post(`${siteUrl}/campeonato.json`, {
-        dia: cartola?.DiaCartolaAtual,
-        usuario: nomeFinal,
-        usuarioUid: usuarioLogado.uid,
-        telefone: telefoneFinal,
-        jogadores: selecoes,
-      });
-      showSnackbar("Cadastro realizado com sucesso!", "success");
-    }
-
-    router.push("/");
-  } catch (err) {
-    console.error(err);
-    showSnackbar("Erro ao enviar seleção.", "error");
-  }
-};
+  };
 
   return (
     <div style={styles.container}>
-      <h1>Campeonato</h1>
+      <h1>Editar Cadastro do Campeonato</h1>
 
       <div style={styles.field}>
         <label>Dia atual:</label>
@@ -130,11 +129,7 @@ const handleSubmit = async () => {
           type="number"
           value={dia}
           readOnly
-          style={{
-            ...styles.select,
-            backgroundColor: "#f0f0f0",
-            cursor: "not-allowed",
-          }}
+          style={{ ...styles.select, backgroundColor: "#f0f0f0", cursor: "not-allowed" }}
         />
       </div>
 
@@ -168,91 +163,41 @@ const handleSubmit = async () => {
         >
           <option value="">Todos os times</option>
           {Object.values(Times).map((t) => (
-            <option key={t} value={t}>
-              {t}
-            </option>
+            <option key={t} value={t}>{t}</option>
           ))}
         </select>
       </div>
 
       {selecoes.map((valor, idx) => (
         <div key={idx} style={styles.field}>
-          <label>
-            Jogador {idx + 1} {idx === 0 ? "(Goleiro)" : ""}:
-          </label>
+          <label>Jogador {idx + 1} {idx === 0 ? "(Goleiro)" : ""}:</label>
           <select
             value={valor}
             onChange={(e) => handleSelectChange(idx, e.target.value)}
             style={styles.select}
           >
             <option value="">Selecione</option>
-            {opcoesFiltradas
-              .concat(valor ? [valor] : [])
-              .map((j) => (
-                <option key={j} value={j}>
-                  {j}
-                </option>
-              ))}
+            {opcoesFiltradas.concat(valor ? [valor] : []).map((j) => (
+              <option key={j} value={j}>{j}</option>
+            ))}
           </select>
         </div>
       ))}
 
       <div style={styles.buttons}>
-        <Link href="/" style={styles.link}>
-          ← Voltar para tabela
-        </Link>
-        <button onClick={handleSubmit} style={styles.button}>
-          Enviar Seleção
-        </button>
+        <Link href="/" style={styles.link}>← Voltar para tabela</Link>
+        <button onClick={handleSubmit} style={styles.button}>Salvar Alterações</button>
       </div>
     </div>
   );
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  container: {
-    maxWidth: 500,
-    margin: "40px auto",
-    padding: 20,
-    fontFamily: "'Segoe UI', sans-serif",
-    border: "1px solid #ccc",
-    borderRadius: 8,
-    backgroundColor: "#f9f9f9",
-  },
-  field: {
-    marginBottom: 16,
-    display: "flex",
-    flexDirection: "column",
-  },
-  input: {
-    padding: 8,
-    fontSize: 16,
-    borderRadius: 4,
-    border: "1px solid #ccc",
-  },
-  select: {
-    padding: 8,
-    fontSize: 16,
-    borderRadius: 4,
-    border: "1px solid #ccc",
-  },
-  button: {
-    padding: "10px 20px",
-    fontSize: 16,
-    fontWeight: 600,
-    borderRadius: 6,
-    border: "none",
-    backgroundColor: "#0070f3",
-    color: "#fff",
-    cursor: "pointer",
-  },
-  buttons: {
-    display: "flex",
-    justifyContent: "space-between",
-  },
-  link: {
-    textDecoration: "none",
-    color: "#0070f3",
-    fontWeight: 600,
-  },
+  container: { maxWidth: 500, margin: "40px auto", padding: 20, fontFamily: "'Segoe UI', sans-serif", border: "1px solid #ccc", borderRadius: 8, backgroundColor: "#f9f9f9" },
+  field: { marginBottom: 16, display: "flex", flexDirection: "column" },
+  input: { padding: 8, fontSize: 16, borderRadius: 4, border: "1px solid #ccc" },
+  select: { padding: 8, fontSize: 16, borderRadius: 4, border: "1px solid #ccc" },
+  button: { padding: "10px 20px", fontSize: 16, fontWeight: 600, borderRadius: 6, border: "none", backgroundColor: "#0070f3", color: "#fff", cursor: "pointer" },
+  buttons: { display: "flex", justifyContent: "space-between" },
+  link: { textDecoration: "none", color: "#0070f3", fontWeight: 600 },
 };
