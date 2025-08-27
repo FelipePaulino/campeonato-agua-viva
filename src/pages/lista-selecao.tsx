@@ -7,31 +7,62 @@ import { Times, jogadoresPorTime } from "@/constants/times";
 import Link from "next/link";
 import { useCartola } from "@/context/cartolaContext";
 import { useRouter } from "next/router";
+import { getAuth } from "firebase/auth";
+import { useUsuario } from "@/context/userContext";
 
 export default function CampeonatoPage() {
   const [dia, setDia] = useState<number>(1);
   const [nomeUsuario, setNomeUsuario] = useState("");
-  const [telefone, setTelefone] = useState(""); // novo estado para telefone
+  const [telefone, setTelefone] = useState("");
   const [selecoes, setSelecoes] = useState<string[]>(["", "", "", "", ""]);
   const [filtroTime, setFiltroTime] = useState<Times | "">("");
 
   const { showSnackbar } = useSnackbar?.() || { showSnackbar: console.log };
   const { cartola } = useCartola();
   const router = useRouter();
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
 
-  // Atualiza o dia com o dia atual do cartola
+  const auth = getAuth();
+  const usuarioLogado = auth.currentUser;
+  const { usuario } = useUsuario();
+
+  useEffect(() => {
+    const fetchCadastro = async () => {
+      if (!usuarioLogado) return;
+      try {
+        const res = await axios.get(`${siteUrl}/campeonato.json`);
+        const data = res.data;
+        if (!data) return;
+
+        const cadastro = Object.entries(data).find(
+           (val: any) =>
+            val.usuarioUid === usuarioLogado.uid && val.dia === cartola?.DiaCartolaAtual
+        );
+
+        if (cadastro) {
+          const val: any = cadastro;
+          setNomeUsuario(val.usuario);
+          setTelefone(val.telefone || "");
+          setSelecoes(val.jogadores || ["", "", "", "", ""]);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchCadastro();
+  }, [usuarioLogado, cartola?.DiaCartolaAtual]);
+
   useEffect(() => {
     if (cartola?.DiaCartolaAtual) {
       setDia(cartola.DiaCartolaAtual);
     }
   }, [cartola]);
 
-  // Pega jogadores filtrando por time (se selecionado)
   const opcoesJogadores = filtroTime
     ? jogadoresPorTime[filtroTime]
     : Object.values(jogadoresPorTime).flat();
 
-  // Remove jogadores já selecionados das opções
   const opcoesFiltradas = opcoesJogadores.filter((j) => !selecoes.includes(j));
 
   const handleSelectChange = (index: number, value: string) => {
@@ -40,41 +71,54 @@ export default function CampeonatoPage() {
     setSelecoes(novasSelecoes);
   };
 
-  const handleSubmit = async () => {
-    if (!nomeUsuario) {
-      showSnackbar("Digite seu nome!", "error");
-      return;
-    }
-       if (!telefone) {
-      showSnackbar("Digite seu telefone!", "error");
-      return;
-    }
-    if (selecoes.some((s) => s === "")) {
-      showSnackbar("Selecione 5 jogadores!", "error");
-      return;
+const handleSubmit = async () => {
+  if (!usuarioLogado) return showSnackbar("Você precisa estar logado!", "error");
+
+  // Pega dados do contexto ou fallback para o estado local
+  const nomeFinal = usuario?.nome || nomeUsuario;
+  const telefoneFinal = usuario?.telefone || telefone;
+
+  if (!nomeFinal) return showSnackbar("Digite seu nome!", "error");
+  if (!telefoneFinal) return showSnackbar("Digite seu telefone!", "error");
+  if (selecoes.some((s) => s === "")) return showSnackbar("Selecione 5 jogadores!", "error");
+
+  try {
+    const res = await axios.get(`${siteUrl}/campeonato.json`);
+    const data = res.data;
+    let cadastroKey: string | null = null;
+
+    if (data) {
+      cadastroKey = Object.keys(data).find(
+        (key) =>
+          data[key].usuarioUid === usuarioLogado.uid &&
+          data[key].dia === cartola?.DiaCartolaAtual
+      ) || null;
     }
 
-    try {
-      await axios.post(
-        "https://sistema-fut-ibav-default-rtdb.firebaseio.com/campeonato.json",
-        {
-          dia,
-          usuario: nomeUsuario,
-          telefone, // envia telefone
-          jogadores: selecoes,
-        }
-      );
-      showSnackbar("Seleção enviada com sucesso!", "success");
-      setNomeUsuario("");
-      setTelefone(""); // limpa o telefone
-      setSelecoes(["", "", "", "", ""]);
-      setFiltroTime("");
-      router.push("/");
-    } catch (err) {
-      console.error(err);
-      showSnackbar("Erro ao enviar seleção.", "error");
+    if (cadastroKey) {
+      await axios.patch(`${siteUrl}/campeonato/${cadastroKey}.json`, {
+        usuario: nomeFinal,
+        telefone: telefoneFinal,
+        jogadores: selecoes,
+      });
+      showSnackbar("Cadastro atualizado com sucesso!", "success");
+    } else {
+      await axios.post(`${siteUrl}/campeonato.json`, {
+        dia: cartola?.DiaCartolaAtual,
+        usuario: nomeFinal,
+        usuarioUid: usuarioLogado.uid,
+        telefone: telefoneFinal,
+        jogadores: selecoes,
+      });
+      showSnackbar("Cadastro realizado com sucesso!", "success");
     }
-  };
+
+    router.push("/");
+  } catch (err) {
+    console.error(err);
+    showSnackbar("Erro ao enviar seleção.", "error");
+  }
+};
 
   return (
     <div style={styles.container}>
@@ -98,7 +142,7 @@ export default function CampeonatoPage() {
         <label>Seu Nome:</label>
         <input
           type="text"
-          value={nomeUsuario}
+          value={usuario?.nome ? usuario.nome : nomeUsuario}
           onChange={(e) => setNomeUsuario(e.target.value)}
           style={styles.input}
         />
@@ -108,7 +152,7 @@ export default function CampeonatoPage() {
         <label>Telefone:</label>
         <input
           type="text"
-          value={telefone}
+          value={usuario?.telefone ? usuario.telefone : telefone}
           onChange={(e) => setTelefone(e.target.value)}
           style={styles.input}
           placeholder="(99) 99999-9999"
@@ -143,7 +187,7 @@ export default function CampeonatoPage() {
           >
             <option value="">Selecione</option>
             {opcoesFiltradas
-              .concat(valor ? [valor] : []) // mantém o valor selecionado mesmo se filtrado
+              .concat(valor ? [valor] : [])
               .map((j) => (
                 <option key={j} value={j}>
                   {j}
