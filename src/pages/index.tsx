@@ -7,18 +7,11 @@ import {
 } from "@phosphor-icons/react";
 import { useCartola } from "@/context/cartolaContext";
 import { useRouter } from "next/router";
-import ProtectedRoute from "@/components/ProtectedRoute";
-import { useAuthHooks } from "@/hooks/useAuth";
-import axios from "axios";
-import { useAuth } from "@/context/AuthContext";
 
 export default function Home() {
   const { jogadores, rodadas } = useJogadores();
   const { cartola } = useCartola();
   const router = useRouter();
-  const { user } = useAuthHooks();
-  const { isAdmin } = useAuth();
-console.log(isAdmin, 'isAdmin');
 
   const [ordenarPor, setOrdenarPor] = useState<"gols" | "media">("media");
   const [ordem, setOrdem] = useState<"asc" | "desc">("desc");
@@ -67,37 +60,11 @@ console.log(isAdmin, 'isAdmin');
     return acc;
   }, {});
 
-  const handleCampeonatoClick = async () => {
-    try {
-      // buscar cadastros do dia atual
-      const res = await axios.get(`${process.env.NEXT_PUBLIC_SITE_URL}/campeonato.json`);
-      const data = res.data;
-
-      if (!data) {
-        // nenhum cadastro encontrado → novo
-        router.push("/selecao");
-        return;
-      }
-
-      // procurar se já existe cadastro para o dia atual
-      const cadastroExistente = Object.entries(data).find(
-        ([key, val]: [string, any]) => {
-          console.log(val.usuario, user.displayName, val.dia, cartola?.DiaCartolaAtual, 'cartola?.DiaCartolaAtual')
-         return val.usuario === user.displayName && val.dia === cartola?.DiaCartolaAtual
-        }
-      );
-
-      if (cadastroExistente) {
-        const [key] = cadastroExistente;
-        // redireciona para edição passando o id
-        router.push(`/lista-selecao-editar?editar=${key}`);
-      } else {
-        // não tem cadastro → novo
-        router.push("/lista-selecao");
-      }
-    } catch (err) {
-      console.error(err);
-      router.push("/selecao"); // fallback
+  const handleCampeonatoClick = () => {
+    if (!cartola?.cartola) {
+      router.push("/selecao");
+    } else {
+      router.push("/lista-selecao");
     }
   };
 
@@ -132,11 +99,9 @@ console.log(isAdmin, 'isAdmin');
       <h1 style={styles.title}>🏆 Campeonato Água Viva</h1>
 
       <div style={styles.buttonsWrapper}>
-        {isAdmin && (
-          <Link href="/cadastrar" style={styles.button}>
-            ➕ Cadastrar nova rodada
-          </Link>
-        )}
+        {/* <Link href="/cadastrar" style={styles.button}>
+          ➕ Cadastrar nova rodada
+        </Link> */}
         {/* <Link href="/rodada" style={styles.buttonWithIcon}>
           <TrophyIcon size={20} weight="bold" />
           Jogadores da rodada
@@ -227,8 +192,8 @@ console.log(isAdmin, 'isAdmin');
                     isTop4
                       ? styles.rowHighlight
                       : i % 2 === 0
-                        ? styles.rowEven
-                        : styles.rowOdd
+                      ? styles.rowEven
+                      : styles.rowOdd
                   }
                 >
                   <td style={isTop4 ? styles.tdHighlight : styles.td}>
@@ -284,8 +249,8 @@ console.log(isAdmin, 'isAdmin');
                     isMelhorGoleiro
                       ? styles.rowHighlight
                       : i % 2 === 0
-                        ? styles.rowEven
-                        : styles.rowOdd
+                      ? styles.rowEven
+                      : styles.rowOdd
                   }
                 >
                   <td style={isMelhorGoleiro ? styles.tdHighlight : styles.td}>
