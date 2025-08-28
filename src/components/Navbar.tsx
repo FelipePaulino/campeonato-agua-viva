@@ -43,7 +43,6 @@ export default function Navbar() {
             Logout
           </button>
         ) : (
-          <>
             <button
               onClick={() => router.push("/login")}
               style={{
@@ -58,20 +57,6 @@ export default function Navbar() {
             >
               Login
             </button>
-            <button
-              onClick={() => router.push("/register")}
-              style={{
-                padding: "8px 12px",
-                borderRadius: 6,
-                backgroundColor: "#00c853",
-                color: "white",
-                border: "none",
-                cursor: "pointer",
-              }}
-            >
-              Cadastrar
-            </button>
-          </>
         )}
       </div>
     </nav>
