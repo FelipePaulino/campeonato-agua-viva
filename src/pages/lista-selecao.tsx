@@ -71,8 +71,19 @@ export default function CampeonatoPage() {
     setSelecoes(novasSelecoes);
   };
 
+  function formatarDataHora() {
+  const agora = new Date();
+  return agora.toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 const handleSubmit = async () => {
-  if (!usuarioLogado) return showSnackbar("Você precisa estar logado!", "error");
+  // if (!usuarioLogado) return showSnackbar("Você precisa estar logado!", "error");
 
   // Pega dados do contexto ou fallback para o estado local
   const nomeFinal = usuario?.nome || nomeUsuario;
@@ -90,7 +101,7 @@ const handleSubmit = async () => {
     if (data) {
       cadastroKey = Object.keys(data).find(
         (key) =>
-          data[key].usuarioUid === usuarioLogado.uid &&
+          data[key].usuarioUid === usuarioLogado?.uid &&
           data[key].dia === cartola?.DiaCartolaAtual
       ) || null;
     }
@@ -106,9 +117,10 @@ const handleSubmit = async () => {
       await axios.post(`${siteUrl}/campeonato.json`, {
         dia: cartola?.DiaCartolaAtual,
         usuario: nomeFinal,
-        usuarioUid: usuarioLogado.uid,
+        usuarioUid: usuarioLogado?.uid,
         telefone: telefoneFinal,
         jogadores: selecoes,
+        data: formatarDataHora(),
       });
       showSnackbar("Cadastro realizado com sucesso!", "success");
     }
