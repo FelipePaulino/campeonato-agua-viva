@@ -62,9 +62,9 @@ export default function Home() {
     return acc;
   }, {});
 
-  const handleCampeonatoClick = async () => {
+const handleCampeonatoClick = async () => {
+  if (cartola?.cartola) {
     try {
-      // buscar cadastros do dia atual
       const res = await axios.get(
         `${process.env.NEXT_PUBLIC_SITE_URL}/campeonato.json`
       );
@@ -76,7 +76,6 @@ export default function Home() {
         return;
       }
 
-      // procurar se já existe cadastro para o dia atual
       const cadastroExistente = Object.entries(data).find(([key, val]: [string, any]) => {
         return val.usuario === user?.displayName &&
           val.dia === cartola?.DiaCartolaAtual;
@@ -84,17 +83,18 @@ export default function Home() {
 
       if (cadastroExistente) {
         const [key] = cadastroExistente;
-        // redireciona para edição passando o id
         router.push(`/lista-selecao-editar?editar=${key}`);
       } else {
-        // não tem cadastro → novo
         router.push("/lista-selecao");
       }
     } catch (err) {
       console.error(err);
-      router.push("/selecao"); // fallback
+      router.push("/selecao");
     }
-  };
+  } else {
+    router.push("/selecao");
+  }
+};
 
   const jogadoresAgrupados = Object.values(jogadoresMap);
 
