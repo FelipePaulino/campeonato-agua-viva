@@ -35,8 +35,9 @@ export default function CampeonatoPage() {
         if (!data) return;
 
         const cadastro = Object.entries(data).find(
-           (val: any) =>
-            val.usuarioUid === usuarioLogado.uid && val.dia === cartola?.DiaCartolaAtual
+          (val: any) =>
+            val.usuarioUid === usuarioLogado.uid &&
+            val.dia === cartola?.DiaCartolaAtual
         );
 
         if (cadastro) {
@@ -72,65 +73,68 @@ export default function CampeonatoPage() {
   };
 
   function formatarDataHora() {
-  const agora = new Date();
-  return agora.toLocaleString("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-const handleSubmit = async () => {
-  // if (!usuarioLogado) return showSnackbar("Você precisa estar logado!", "error");
-
-  // Pega dados do contexto ou fallback para o estado local
-  const nomeFinal = usuario?.nome || nomeUsuario;
-  const telefoneFinal = usuario?.telefone || telefone;
-
-  if (!nomeFinal) return showSnackbar("Digite seu nome!", "error");
-  if (!telefoneFinal) return showSnackbar("Digite seu telefone!", "error");
-  if (selecoes.some((s) => s === "")) return showSnackbar("Selecione 5 jogadores!", "error");
-
-  try {
-    const res = await axios.get(`${siteUrl}/campeonato.json`);
-    const data = res.data;
-    let cadastroKey: string | null = null;
-
-    if (data) {
-      cadastroKey = Object.keys(data).find(
-        (key) =>
-          data[key].usuarioUid === usuarioLogado?.uid &&
-          data[key].dia === cartola?.DiaCartolaAtual
-      ) || null;
-    }
-
-    if (cadastroKey) {
-      await axios.patch(`${siteUrl}/campeonato/${cadastroKey}.json`, {
-        usuario: nomeFinal,
-        telefone: telefoneFinal,
-        jogadores: selecoes,
-      });
-      showSnackbar("Cadastro atualizado com sucesso!", "success");
-    } else {
-      await axios.post(`${siteUrl}/campeonato.json`, {
-        dia: cartola?.DiaCartolaAtual,
-        usuario: nomeFinal,
-        usuarioUid: usuarioLogado?.uid,
-        telefone: telefoneFinal,
-        jogadores: selecoes,
-        data: formatarDataHora(),
-      });
-      showSnackbar("Cadastro realizado com sucesso!", "success");
-    }
-
-    router.push("/");
-  } catch (err) {
-    console.error(err);
-    showSnackbar("Erro ao enviar seleção.", "error");
+    const agora = new Date();
+    return agora.toLocaleString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   }
-};
+
+  const handleSubmit = async () => {
+    // if (!usuarioLogado) return showSnackbar("Você precisa estar logado!", "error");
+
+    // Pega dados do contexto ou fallback para o estado local
+    const nomeFinal = usuario?.nome || nomeUsuario;
+    const telefoneFinal = usuario?.telefone || telefone;
+
+    if (!nomeFinal) return showSnackbar("Digite seu nome!", "error");
+    if (!telefoneFinal) return showSnackbar("Digite seu telefone!", "error");
+    if (selecoes.some((s) => s === ""))
+      return showSnackbar("Selecione 5 jogadores!", "error");
+
+    try {
+      const res = await axios.get(`${siteUrl}/campeonato.json`);
+      const data = res.data;
+      let cadastroKey: string | null = null;
+
+      if (data) {
+        cadastroKey =
+          Object.keys(data).find(
+            (key) =>
+              usuarioLogado?.uid !== undefined &&
+              data[key].usuarioUid === usuarioLogado?.uid &&
+              data[key].dia === cartola?.DiaCartolaAtual
+          ) || null;
+      }
+
+      if (cadastroKey) {
+        await axios.patch(`${siteUrl}/campeonato/${cadastroKey}.json`, {
+          usuario: nomeFinal,
+          telefone: telefoneFinal,
+          jogadores: selecoes,
+        });
+        showSnackbar("Cadastro atualizado com sucesso!", "success");
+      } else {
+        await axios.post(`${siteUrl}/campeonato.json`, {
+          dia: cartola?.DiaCartolaAtual,
+          usuario: nomeFinal,
+          usuarioUid: usuarioLogado?.uid,
+          telefone: telefoneFinal,
+          jogadores: selecoes,
+          data: formatarDataHora(),
+        });
+        showSnackbar("Cadastro realizado com sucesso!", "success");
+      }
+
+      router.push("/");
+    } catch (err) {
+      console.error(err);
+      showSnackbar("Erro ao enviar seleção.", "error");
+    }
+  };
 
   return (
     <div style={styles.container}>
@@ -198,13 +202,11 @@ const handleSubmit = async () => {
             style={styles.select}
           >
             <option value="">Selecione</option>
-            {opcoesFiltradas
-              .concat(valor ? [valor] : [])
-              .map((j) => (
-                <option key={j} value={j}>
-                  {j}
-                </option>
-              ))}
+            {opcoesFiltradas.concat(valor ? [valor] : []).map((j) => (
+              <option key={j} value={j}>
+                {j}
+              </option>
+            ))}
           </select>
         </div>
       ))}
